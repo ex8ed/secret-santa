@@ -2,6 +2,7 @@
 import pandas as pd
 import config
 import random
+import codecs
 from collections import deque
 
 
@@ -12,27 +13,38 @@ class Generator:
         """Constructor provides to work with a path to data table"""
         self._path = path
         self._pairs = {}
+        self._people = []
 
-    def get_people_list(self):
+    # a pack of getters for protected members
+    def get_pairs(self):
         return self._pairs
+
+    def get_people(self):
+        return self._people
+
+    def __get_people_from_doc(self):
+        """Getting people from the list in the document"""
+        data = pd.read_excel('./data.xlsx')
+        self._people = list(data['ФИО'])
 
     def __compare_people(self):
         """ Given a list of people, assign each one a secret santa partner
             from the list and return the pairings as a dict. Implemented to always
             create a perfect cycle """
-        people_ = config.people
-        random.shuffle(people_)
-        partners = deque(people_)
+        self.__get_people_from_doc()
+        random.shuffle(self._people)
+        partners = deque(self._people)
         partners.rotate()
-        self._pairs = dict(zip(people_, partners))
+        self._pairs = dict(zip(self._people, partners))
 
     def test_compare(self):
         self.__compare_people()
-        print(self._pairs)
+        self.get_pairs()
 
     def generate_message(self):
+        """Generates messages to a text-file in the current directory"""
         data = pd.read_excel(self._path)
-        with open('Messages.txt', 'w') as f:
+        with codecs.open('messages.txt', 'w', "utf_8_sig") as f:
             self.__compare_people()
             for guy in self._pairs.keys():
                 gifted_name = self._pairs[guy]
@@ -47,17 +59,7 @@ class Generator:
                     'Говорят в тайном бусике можно поставить телевизор. Какой фильм из 2022 ты бы посмотрел на новый год?']
                 meal = data.iloc[row_i]['Бусику нравится 109 бензин, а какое твое любимое новогоднее блюдо?']
                 people_count = data.iloc[row_i]['Сколько людей нужно, чтобы завести тайный бусик и уехать из смены?']
-                print(gifted_name,
-                      address,
-                      index,
-                      best_variant,
-                      especial_thing,
-                      decorations,
-                      best_gift,
-                      film,
-                      meal,
-                      people_count)
-                f.write(f'Отправитель: {guy}\n')
+                f.write(f'Отправитель: {guy}, --> {gifted_name}\n')
                 f.write('###########################################\n')
                 f.write(config.default_message.format(gifted_name=gifted_name,
                                                       address=address,
